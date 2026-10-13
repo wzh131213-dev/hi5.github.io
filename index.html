@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2.5D 异界冒险者 - Isometric Dungeon ARPG</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <!-- 3D Canvas will be injected here by Three.js -->
+    </div>
+
+    <!-- HUD Overlay -->
+    <div id="hud" class="hud-layer hidden">
+        <!-- Top Status Bar -->
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar-box">
+                    <div class="avatar-icon">⚔️</div>
+                    <div class="level-badge" id="hud-level">LV 1</div>
+                </div>
+                <div class="bars-container">
+                    <!-- HP Bar -->
+                    <div class="bar-wrapper hp-wrapper">
+                        <span class="bar-label">HP</span>
+                        <div class="bar-outer">
+                            <div class="bar-inner" id="hp-bar" style="width: 100%;"></div>
+                            <span class="bar-text" id="hp-text">100 / 100</span>
+                        </div>
+                    </div>
+                    <!-- MP Bar -->
+                    <div class="bar-wrapper mp-wrapper">
+                        <span class="bar-label">MP</span>
+                        <div class="bar-outer">
+                            <div class="bar-inner" id="mp-bar" style="width: 100%;"></div>
+                            <span class="bar-text" id="mp-text">50 / 50</span>
+                        </div>
+                    </div>
+                    <!-- EXP Bar -->
+                    <div class="bar-wrapper exp-wrapper">
+                        <span class="bar-label">EXP</span>
+                        <div class="bar-outer">
+                            <div class="bar-inner" id="exp-bar" style="width: 0%;"></div>
+                            <span class="bar-text" id="exp-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage & Score Info -->
+            <div class="stage-info">
+                <div class="stage-title" id="stage-title">第 1 关: 幽暗地窟</div>
+                <div class="wave-count" id="wave-text">波次: 1 / 3</div>
+            </div>
+
+            <!-- Currency & Score -->
+            <div class="stats-box">
+                <div class="stat-item"><span class="icon">🪙</span> <span id="coin-count">0</span></div>
+                <div class="stat-item"><span class="icon">🏆</span> <span id="score-count">0</span></div>
+            </div>
+        </div>
+
+        <!-- Minimap -->
+        <div class="minimap-container">
+            <canvas id="minimap" width="140" height="140"></canvas>
+            <div class="minimap-title">迷你地图</div>
+        </div>
+
+        <!-- Skill Hotbar -->
+        <div class="skill-bar">
+            <div class="skill-slot" id="skill-attack" data-key="J">
+                <div class="skill-icon">🗡️</div>
+                <div class="key-bind">J / 左键</div>
+                <div class="skill-name">普通攻击</div>
+                <div class="cooldown-overlay" id="cd-attack"></div>
+            </div>
+            <div class="skill-slot" id="skill-dash" data-key="K">
+                <div class="skill-icon">⚡</div>
+                <div class="key-bind">K / Space</div>
+                <div class="skill-name">影之冲刺</div>
+                <div class="cooldown-overlay" id="cd-dash"></div>
+            </div>
+            <div class="skill-slot" id="skill-spell" data-key="L">
+                <div class="skill-icon">🔥</div>
+                <div class="key-bind">L / 1</div>
+                <div class="skill-name">烈焰风暴</div>
+                <div class="cooldown-overlay" id="cd-spell"></div>
+            </div>
+            <div class="skill-slot" id="skill-heal" data-key="H">
+                <div class="skill-icon">💚</div>
+                <div class="key-bind">H / 2</div>
+                <div class="skill-name">圣光治愈</div>
+                <div class="cooldown-overlay" id="cd-heal"></div>
+            </div>
+        </div>
+
+        <!-- Combo & Damage Numbers Overlay -->
+        <div id="floating-text-container"></div>
+    </div>
+
+    <!-- UI Overlays / Modals -->
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="overlay-modal active">
+        <div class="modal-card">
+            <h1 class="game-title">2.5D 异界冒险者</h1>
+            <p class="game-subtitle">Isometric Dungeon ARPG</p>
+
+            <div class="instructions-panel">
+                <h3>🎮 操作指南</h3>
+                <ul>
+                    <li><span class="highlight">WASD</span> 或 <span class="highlight">方向键</span>：控制角色移动 (2.5D等轴视角)</li>
+                    <li><span class="highlight">J</span> / <span class="highlight">鼠标左键</span>：斩击普通攻击</li>
+                    <li><span class="highlight">K</span> / <span class="highlight">空格键</span>：影之冲刺（快速位移与无敌帧）</li>
+                    <li><span class="highlight">L</span> / <span class="highlight">数字键1</span>：烈焰风暴（AOE范围魔法伤害）</li>
+                    <li><span class="highlight">H</span> / <span class="highlight">数字键2</span>：圣光治愈（恢复生命值）</li>
+                    <li><span class="highlight">P</span> / <span class="highlight">ESC</span>：暂停游戏</li>
+                </ul>
+            </div>
+
+            <div class="difficulty-select">
+                <label>选择难度：</label>
+                <div class="btn-group">
+                    <button class="diff-btn active" data-diff="easy">简单</button>
+                    <button class="diff-btn" data-diff="normal">普通</button>
+                    <button class="diff-btn" data-diff="hard">地狱</button>
+                </div>
+            </div>
+
+            <button id="start-btn" class="primary-btn pulse">开始冒险</button>
+        </div>
+    </div>
+
+    <!-- Upgrade / Level Up Modal -->
+    <div id="upgrade-modal" class="overlay-modal hidden">
+        <div class="modal-card upgrade-card">
+            <h2 class="modal-title">✨ 等级提升！选择升级项</h2>
+            <p class="modal-subtitle">选择一项强化来提升你的战斗力</p>
+            <div id="upgrade-options" class="upgrade-grid">
+                <!-- Dynamic cards generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pause-screen" class="overlay-modal hidden">
+        <div class="modal-card">
+            <h2>⏸️ 游戏暂停</h2>
+            <div class="stats-summary">
+                <p>击杀怪物：<span id="pause-kills">0</span></p>
+                <p>获得金币：<span id="pause-coins">0</span></p>
+                <p>当前得分：<span id="pause-score">0</span></p>
+            </div>
+            <div class="btn-stack">
+                <button id="resume-btn" class="primary-btn">继续游戏</button>
+                <button id="restart-from-pause-btn" class="secondary-btn">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stage Victory Modal -->
+    <div id="victory-modal" class="overlay-modal hidden">
+        <div class="modal-card">
+            <h2 class="victory-title">🎉 关卡清理完成！</h2>
+            <p>地牢的该区域已被净化，前方的传送门已开启！</p>
+            <div class="stats-summary">
+                <p>本关斩获金币：<span id="stage-coins">0</span></p>
+                <p>累计得分：<span id="stage-score">0</span></p>
+            </div>
+            <button id="next-stage-btn" class="primary-btn">进入下一关 ➡️</button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="overlay-modal hidden">
+        <div class="modal-card">
+            <h2 class="game-over-title">☠️ 战败身亡</h2>
+            <p>你在深渊地窟中力竭倒下了...</p>
+            <div class="stats-summary">
+                <p>到达关卡：<span id="final-stage">1</span></p>
+                <p>累计击杀：<span id="final-kills">0</span></p>
+                <p>收集金币：<span id="final-coins">0</span></p>
+                <p>最终得分：<span id="final-score">0</span></p>
+            </div>
+            <button id="restart-btn" class="primary-btn glow">重振旗鼓</button>
+        </div>
+    </div>
+
+    <!-- Game Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/enemy.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
