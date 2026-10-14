@@ -1,5 +1,5 @@
 /**
- * Player.js - Player Character Entity with 2.5D Isometric Movement, Stats, and Skills
+ * Player.js - DNF Ghost Knight (鬼剑士) Hero Entity with Skill Combos & Belt-Scroll Movement
  */
 
 class Player {
@@ -10,86 +10,98 @@ class Player {
         this.level = 1;
         this.xp = 0;
         this.xpToNextLevel = 100;
-        this.maxHp = 100;
-        this.hp = 100;
-        this.maxMp = 50;
-        this.mp = 50;
-        this.attackPower = 25;
-        this.defense = 5;
-        this.moveSpeed = 0.16;
+        this.maxHp = 120;
+        this.hp = 120;
+        this.maxMp = 80;
+        this.mp = 80;
+        this.attackPower = 30;
+        this.defense = 8;
+        this.moveSpeed = 0.18;
+        this.facingRight = true; // Belt-scroll facing direction
 
-        // State Flags
-        this.isDashing = false;
+        // State Flags & Animation States
         this.isAttacking = false;
         this.isInvulnerable = false;
-        this.dashCooldown = 0;
-        this.spellCooldown = 0;
-        this.healCooldown = 0;
-        this.attackCooldown = 0;
+        this.comboIndex = 0; // 0, 1, 2 (X-X-X 3-hit combo)
+        this.comboResetTimer = null;
 
-        // Visual Mesh Creation (Hero Character)
+        // Visual Mesh Creation (Ghost Knight - 鬼剑士)
         this.mesh = new THREE.Group();
 
-        // Body (Armor Core)
-        const bodyGeo = new THREE.CylinderGeometry(0.5, 0.4, 1.4, 8);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2b5ce7, roughness: 0.3, metalness: 0.6 });
+        // Ghost Arm (Left arm with dark demon aura)
+        const ghostArmGeo = new THREE.CylinderGeometry(0.18, 0.15, 0.9, 8);
+        const ghostArmMat = new THREE.MeshStandardMaterial({ color: 0x990022, roughness: 0.2, emissive: 0x440011 });
+        const ghostArm = new THREE.Mesh(ghostArmGeo, ghostArmMat);
+        ghostArm.position.set(-0.5, 0.8, 0);
+        ghostArm.rotation.z = 0.3;
+        this.mesh.add(ghostArm);
+
+        // Armor Body Core
+        const bodyGeo = new THREE.CylinderGeometry(0.45, 0.35, 1.3, 8);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1f293d, roughness: 0.3, metalness: 0.7 });
         this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-        this.bodyMesh.position.y = 0.7;
+        this.bodyMesh.position.y = 0.65;
         this.bodyMesh.castShadow = true;
-        this.bodyMesh.receiveShadow = true;
         this.mesh.add(this.bodyMesh);
 
-        // Head & Helmet
+        // Head & Hair
         const headGeo = new THREE.SphereGeometry(0.35, 12, 12);
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xe0e6ed, roughness: 0.2, metalness: 0.8 });
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.5 });
         const headMesh = new THREE.Mesh(headGeo, headMat);
-        headMesh.position.y = 1.6;
-        headMesh.castShadow = true;
+        headMesh.position.y = 1.5;
         this.mesh.add(headMesh);
 
-        // Glowing Visor/Eyes
-        const visorGeo = new THREE.BoxGeometry(0.3, 0.1, 0.2);
-        const visorMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-        const visor = new THREE.Mesh(visorGeo, visorMat);
-        visor.position.set(0, 1.62, 0.22);
-        this.mesh.add(visor);
+        // Red Hair Spikes
+        const hairGeo = new THREE.ConeGeometry(0.4, 0.7, 6);
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0xcc0000, roughness: 0.4 });
+        const hair = new THREE.Mesh(hairGeo, hairMat);
+        hair.position.set(0, 1.8, -0.1);
+        hair.rotation.x = -0.4;
+        this.mesh.add(hair);
 
-        // Sword Weapon Mesh
+        // Katana Greatsword (Zanbato)
         this.weaponGroup = new THREE.Group();
-        const bladeGeo = new THREE.BoxGeometry(0.1, 1.2, 0.2);
-        const bladeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.9, emissive: 0x113355 });
+        const bladeGeo = new THREE.BoxGeometry(0.12, 1.8, 0.25);
+        const bladeMat = new THREE.MeshStandardMaterial({
+            color: 0xe6edf3,
+            roughness: 0.1,
+            metalness: 0.95,
+            emissive: 0x224488
+        });
         const blade = new THREE.Mesh(bladeGeo, bladeMat);
-        blade.position.y = 0.6;
+        blade.position.y = 0.9;
         blade.castShadow = true;
         this.weaponGroup.add(blade);
 
-        const hiltGeo = new THREE.BoxGeometry(0.4, 0.08, 0.15);
-        const hiltMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.4 });
+        const hiltGeo = new THREE.BoxGeometry(0.5, 0.1, 0.2);
+        const hiltMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.3 });
         const hilt = new THREE.Mesh(hiltGeo, hiltMat);
         this.weaponGroup.add(hilt);
 
-        this.weaponGroup.position.set(0.6, 0.7, 0.2);
-        this.weaponGroup.rotation.z = -Math.PI / 6;
+        this.weaponGroup.position.set(0.5, 0.7, 0.2);
+        this.weaponGroup.rotation.z = -Math.PI / 4;
         this.mesh.add(this.weaponGroup);
 
-        // Player Shadow Ring / Base Glow
-        const ringGeo = new THREE.RingGeometry(0.4, 0.6, 16);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+        // Shadow Ring
+        const ringGeo = new THREE.RingGeometry(0.4, 0.7, 16);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
         ring.position.y = 0.02;
         this.mesh.add(ring);
 
-        // Position & Adding to Scene
-        this.mesh.position.set(0, 0, 0);
+        // Position & Scene Adding
+        this.mesh.position.set(-12, 0, 0); // Start left side of belt-scroll room
         this.scene.add(this.mesh);
 
-        // Skill Timers Setup
+        // DNF Skill Hotbar Timers
         this.skills = {
-            attack: { cooldown: 0.35, currentCd: 0 },
-            dash: { cooldown: 2.0, currentCd: 0 },
-            spell: { cooldown: 5.0, currentCd: 0 },
-            heal: { cooldown: 10.0, currentCd: 0 }
+            attack: { cooldown: 0.2, currentCd: 0 },
+            upper: { cooldown: 2.0, currentCd: 0 },     // 上挑 (Launch)
+            ghost: { cooldown: 4.0, currentCd: 0 },     // 鬼斩 (Dark Ghost Wave)
+            triple: { cooldown: 5.0, currentCd: 0 },    // 三段斩 (Triple Dash Slash)
+            wave: { cooldown: 6.0, currentCd: 0 },      // 地裂·波动剑 (Ground Shockwave)
+            backstep: { cooldown: 1.5, currentCd: 0 }   // 后跳 (Backstep Evasion)
         };
     }
 
@@ -97,8 +109,8 @@ class Player {
         this.mesh.position.set(x, y, z);
     }
 
-    update(dt, inputDir, mouseWorldPos) {
-        // Cooldown tick down
+    update(dt, inputDir) {
+        // Cooldown tick
         for (let key in this.skills) {
             if (this.skills[key].currentCd > 0) {
                 this.skills[key].currentCd -= dt;
@@ -106,100 +118,267 @@ class Player {
             }
         }
 
-        // Mana regeneration over time
+        // Mana regen
         if (this.mp < this.maxMp) {
-            this.mp = Math.min(this.maxMp, this.mp + 3 * dt);
+            this.mp = Math.min(this.maxMp, this.mp + 4 * dt);
         }
 
-        // Handle Movement in 2.5D Isometric Space
-        // Note: Isometric view rotates movement vectors by 45 degrees relative to screen
+        // Movement in 2.5D Belt-Scroll Space (X: horizontal left/right, Z: depth forward/backward)
         if ((inputDir.x !== 0 || inputDir.z !== 0) && !this.isAttacking) {
-            // Isometric dir transform
-            const isoX = (inputDir.x - inputDir.z) * 0.7071;
-            const isoZ = (inputDir.x + inputDir.z) * 0.7071;
+            this.mesh.position.x += inputDir.x * this.moveSpeed;
+            this.mesh.position.z += inputDir.z * this.moveSpeed;
 
-            const speed = this.isDashing ? this.moveSpeed * 3.2 : this.moveSpeed;
-            this.mesh.position.x += isoX * speed;
-            this.mesh.position.z += isoZ * speed;
-
-            // Rotation towards movement direction when not aiming specifically
-            if (!mouseWorldPos) {
-                const targetAngle = Math.atan2(isoX, isoZ);
-                this.mesh.rotation.y = targetAngle;
+            // Facing Direction Update
+            if (inputDir.x > 0) {
+                this.facingRight = true;
+                this.mesh.rotation.y = Math.PI / 2;
+            } else if (inputDir.x < 0) {
+                this.facingRight = false;
+                this.mesh.rotation.y = -Math.PI / 2;
             }
 
-            // Running bobbing animation
-            this.bodyMesh.position.y = 0.7 + Math.sin(Date.now() * 0.015) * 0.08;
+            // Running bobbing
+            this.bodyMesh.position.y = 0.65 + Math.sin(Date.now() * 0.018) * 0.08;
         } else {
-            this.bodyMesh.position.y = 0.7;
+            this.bodyMesh.position.y = 0.65;
         }
 
-        // Mouse aiming orientation
-        if (mouseWorldPos) {
-            const dx = mouseWorldPos.x - this.mesh.position.x;
-            const dz = mouseWorldPos.z - this.mesh.position.z;
-            this.mesh.rotation.y = Math.atan2(dx, dz);
-        }
-
-        // Dash decay
-        if (this.isDashing) {
-            this.dashTimer -= dt;
-            if (this.dashTimer <= 0) {
-                this.isDashing = false;
-                this.isInvulnerable = false;
-            }
-        }
+        // Room boundary constraints (Belt-scroll stage limits: X[-16, 16], Z[-5.5, 5.5])
+        this.mesh.position.x = Math.max(-16.5, Math.min(16.5, this.mesh.position.x));
+        this.mesh.position.z = Math.max(-5.5, Math.min(5.5, this.mesh.position.z));
     }
 
-    performBasicAttack(onHitEnemiesCallback) {
+    performBasicCombo(onHitEnemiesCallback) {
         if (this.skills.attack.currentCd > 0) return false;
 
         this.skills.attack.currentCd = this.skills.attack.cooldown;
         this.isAttacking = true;
         SoundEngine.playSlashSound();
 
-        // Slash Animation
-        const startRot = this.weaponGroup.rotation.y;
-        let animProgress = 0;
+        // 3-hit combo logic (X-X-X)
+        this.comboIndex = (this.comboIndex + 1) % 3;
+        clearTimeout(this.comboResetTimer);
+        this.comboResetTimer = setTimeout(() => { this.comboIndex = 0; }, 1200);
 
+        // Sword Slash Animation based on combo hit stage
+        const dirSign = this.facingRight ? 1 : -1;
+        const targetRot = (this.comboIndex === 2) ? Math.PI * 1.2 * dirSign : Math.PI * 0.8 * dirSign;
+
+        let animProgress = 0;
         const slashInterval = setInterval(() => {
-            animProgress += 0.2;
-            this.weaponGroup.rotation.y = Math.sin(animProgress * Math.PI) * 1.8;
+            animProgress += 0.25;
+            this.weaponGroup.rotation.y = Math.sin(animProgress * Math.PI) * targetRot;
             if (animProgress >= 1) {
                 clearInterval(slashInterval);
-                this.weaponGroup.rotation.y = startRot;
+                this.weaponGroup.rotation.y = -Math.PI / 4;
                 this.isAttacking = false;
             }
         }, 16);
 
-        // Visual Slash Arc Effect
-        this.createSlashArc();
+        // Visual Slash Arc
+        this.createSlashArc((this.comboIndex === 2) ? 0xff2200 : 0x00f0ff);
 
-        // Hit Detection Arc (Forward 2.5 units cone)
+        // Hit Detection Arc (Forward 3.5 units)
         if (onHitEnemiesCallback) {
-            onHitEnemiesCallback(this.mesh.position, this.mesh.rotation.y, 3.2, Math.PI * 0.7, this.attackPower);
+            const damageMult = (this.comboIndex === 2) ? 1.6 : 1.0;
+            onHitEnemiesCallback(this.mesh.position, this.facingRight, 3.8, this.attackPower * damageMult, {
+                knockback: (this.comboIndex === 2) ? 2.5 : 1.0,
+                launch: (this.comboIndex === 2) ? 1.5 : 0.2,
+                comboCount: 1
+            });
         }
 
         return true;
     }
 
-    createSlashArc() {
-        const arcGeo = new THREE.RingGeometry(1.2, 2.8, 16, 1, 0, Math.PI * 0.6);
-        const arcMat = new THREE.MeshBasicMaterial({
-            color: 0x00e5ff,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.8
-        });
+    // Skill 1: Upper Slash (上挑 - Launches Enemies)
+    performUpperSlash(onHitEnemiesCallback) {
+        if (this.skills.upper.currentCd > 0 || this.mp < 10) return false;
+
+        this.mp -= 10;
+        this.skills.upper.currentCd = this.skills.upper.cooldown;
+        this.isAttacking = true;
+        SoundEngine.playLaunchSound();
+
+        // Upward Sword Sweep Animation
+        let progress = 0;
+        const sweep = setInterval(() => {
+            progress += 0.2;
+            this.weaponGroup.rotation.x = Math.sin(progress * Math.PI) * Math.PI;
+            if (progress >= 1) {
+                clearInterval(sweep);
+                this.weaponGroup.rotation.x = 0;
+                this.isAttacking = false;
+            }
+        }, 16);
+
+        // Upward energy crescent visual
+        this.createSlashArc(0xffd700, 1.4);
+
+        if (onHitEnemiesCallback) {
+            onHitEnemiesCallback(this.mesh.position, this.facingRight, 3.5, this.attackPower * 1.5, {
+                knockback: 0.8,
+                launch: 4.5, // High Launch Float
+                comboCount: 2
+            });
+        }
+
+        return true;
+    }
+
+    // Skill 2: Ghost Slash (鬼斩 - High Damage Ghost Wave)
+    performGhostSlash(onHitEnemiesCallback) {
+        if (this.skills.ghost.currentCd > 0 || this.mp < 20) return false;
+
+        this.mp -= 20;
+        this.skills.ghost.currentCd = this.skills.ghost.cooldown;
+        this.isAttacking = true;
+        SoundEngine.playGhostSlashSound();
+
+        // Giant Dark Ghost Wave Crescent
+        const waveGeo = new THREE.RingGeometry(0.8, 3.5, 16, 1, 0, Math.PI);
+        const waveMat = new THREE.MeshBasicMaterial({ color: 0x990033, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+        const wave = new THREE.Mesh(waveGeo, waveMat);
+        wave.position.copy(this.mesh.position);
+        wave.position.y += 1.0;
+        wave.rotation.y = this.facingRight ? Math.PI / 2 : -Math.PI / 2;
+        this.scene.add(wave);
+
+        let scale = 1.0;
+        const anim = setInterval(() => {
+            scale += 0.15;
+            wave.scale.set(scale, scale, 1);
+            waveMat.opacity -= 0.1;
+            if (waveMat.opacity <= 0) {
+                clearInterval(anim);
+                this.scene.remove(wave);
+                waveGeo.dispose();
+                waveMat.dispose();
+                this.isAttacking = false;
+            }
+        }, 20);
+
+        if (onHitEnemiesCallback) {
+            onHitEnemiesCallback(this.mesh.position, this.facingRight, 5.0, this.attackPower * 2.8, {
+                knockback: 4.0,
+                launch: 1.0,
+                comboCount: 3
+            });
+        }
+
+        return true;
+    }
+
+    // Skill 3: Triple Dash Slash (三段斩 - Multi-dash sword thrust)
+    performTripleDashSlash(onHitEnemiesCallback) {
+        if (this.skills.triple.currentCd > 0 || this.mp < 25) return false;
+
+        this.mp -= 25;
+        this.skills.triple.currentCd = this.skills.triple.cooldown;
+        SoundEngine.playDashSound();
+
+        const dirX = this.facingRight ? 1 : -1;
+        let step = 0;
+
+        const dashInterval = setInterval(() => {
+            step++;
+            this.mesh.position.x += dirX * 3.2;
+            SoundEngine.playSlashSound();
+            this.createSlashArc(0x00ffff, 1.2);
+
+            if (onHitEnemiesCallback) {
+                onHitEnemiesCallback(this.mesh.position, this.facingRight, 3.2, this.attackPower * 1.2, {
+                    knockback: 1.5,
+                    launch: 0.5,
+                    comboCount: 1
+                });
+            }
+
+            if (step >= 3) {
+                clearInterval(dashInterval);
+            }
+        }, 120);
+
+        return true;
+    }
+
+    // Skill 4: Wave Sword (地裂·波动剑 - Ground Shockwave)
+    performWaveSword(onHitEnemiesCallback) {
+        if (this.skills.wave.currentCd > 0 || this.mp < 20) return false;
+
+        this.mp -= 20;
+        this.skills.wave.currentCd = this.skills.wave.cooldown;
+        SoundEngine.playWaveSound();
+
+        const dirX = this.facingRight ? 1 : -1;
+
+        // Ground shockwave rings advancing forward
+        for (let i = 1; i <= 4; i++) {
+            setTimeout(() => {
+                const ringGeo = new THREE.RingGeometry(0.5 * i, 1.0 * i, 16);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.set(this.mesh.position.x + dirX * i * 1.8, 0.1, this.mesh.position.z);
+                this.scene.add(ring);
+
+                setTimeout(() => {
+                    this.scene.remove(ring);
+                    ringGeo.dispose();
+                    ringMat.dispose();
+                }, 250);
+            }, i * 60);
+        }
+
+        if (onHitEnemiesCallback) {
+            onHitEnemiesCallback(this.mesh.position, this.facingRight, 7.5, this.attackPower * 2.0, {
+                knockback: 3.5,
+                launch: 0.8,
+                comboCount: 2
+            });
+        }
+
+        return true;
+    }
+
+    // Skill 5: Backstep Evasion (后跳 - Back Hop)
+    performBackstep() {
+        if (this.skills.backstep.currentCd > 0) return false;
+
+        this.skills.backstep.currentCd = this.skills.backstep.cooldown;
+        this.isInvulnerable = true;
+        SoundEngine.playDashSound();
+
+        const backDirX = this.facingRight ? -1 : 1;
+        let airTime = 0;
+
+        const hop = setInterval(() => {
+            airTime += 0.2;
+            this.mesh.position.x += backDirX * 0.4;
+            this.mesh.position.y = Math.sin(airTime * Math.PI) * 1.2;
+
+            if (airTime >= 1) {
+                clearInterval(hop);
+                this.mesh.position.y = 0;
+                this.isInvulnerable = false;
+            }
+        }, 16);
+
+        return true;
+    }
+
+    createSlashArc(colorHex = 0x00f0ff, scaleMult = 1.0) {
+        const arcGeo = new THREE.RingGeometry(1.2 * scaleMult, 2.5 * scaleMult, 16, 1, 0, Math.PI * 0.7);
+        const arcMat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
         const arcMesh = new THREE.Mesh(arcGeo, arcMat);
         arcMesh.rotation.x = Math.PI / 2;
-        arcMesh.rotation.z = -Math.PI / 3;
+        arcMesh.rotation.z = this.facingRight ? -Math.PI / 4 : Math.PI * 0.75;
         arcMesh.position.set(0, 0.8, 0.5);
         this.mesh.add(arcMesh);
 
-        let op = 0.8;
+        let op = 0.95;
         const fade = setInterval(() => {
-            op -= 0.15;
+            op -= 0.18;
             arcMat.opacity = op;
             if (op <= 0) {
                 clearInterval(fade);
@@ -207,100 +386,7 @@ class Player {
                 arcGeo.dispose();
                 arcMat.dispose();
             }
-        }, 30);
-    }
-
-    performDash() {
-        if (this.skills.dash.currentCd > 0) return false;
-
-        this.skills.dash.currentCd = this.skills.dash.cooldown;
-        this.isDashing = true;
-        this.isInvulnerable = true;
-        this.dashTimer = 0.25;
-        SoundEngine.playDashSound();
-
-        // Ghost trail effect
-        for (let i = 0; i < 3; i++) {
-            setTimeout(() => {
-                const ghostMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.4 });
-                const ghost = new THREE.Mesh(this.bodyMesh.geometry.clone(), ghostMat);
-                ghost.position.copy(this.mesh.position);
-                ghost.position.y += 0.7;
-                ghost.rotation.copy(this.mesh.rotation);
-                this.scene.add(ghost);
-
-                setTimeout(() => {
-                    this.scene.remove(ghost);
-                    ghostMat.dispose();
-                }, 200);
-            }, i * 60);
-        }
-
-        return true;
-    }
-
-    performSpell(onHitEnemiesCallback) {
-        if (this.skills.spell.currentCd > 0 || this.mp < 20) return false;
-
-        this.mp -= 20;
-        this.skills.spell.currentCd = this.skills.spell.cooldown;
-        SoundEngine.playSpellSound();
-
-        // Fire Nova AOE Ring Effect
-        const ringGeo = new THREE.RingGeometry(0.5, 1.0, 32);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0xff3300, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
-        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.rotation.x = Math.PI / 2;
-        ringMesh.position.copy(this.mesh.position);
-        ringMesh.position.y = 0.2;
-        this.scene.add(ringMesh);
-
-        let scale = 1.0;
-        const expand = setInterval(() => {
-            scale += 0.8;
-            ringMesh.scale.set(scale, scale, 1);
-            ringMat.opacity -= 0.08;
-
-            if (ringMat.opacity <= 0) {
-                clearInterval(expand);
-                this.scene.remove(ringMesh);
-                ringGeo.dispose();
-                ringMat.dispose();
-            }
         }, 20);
-
-        // AOE Damage hit callback (Radius 6.5 units full circle)
-        if (onHitEnemiesCallback) {
-            onHitEnemiesCallback(this.mesh.position, 0, 6.5, Math.PI * 2, this.attackPower * 2.2);
-        }
-
-        return true;
-    }
-
-    performHeal() {
-        if (this.skills.heal.currentCd > 0 || this.mp < 15) return false;
-
-        this.mp -= 15;
-        this.skills.heal.currentCd = this.skills.heal.cooldown;
-        const healAmt = Math.round(this.maxHp * 0.4);
-        this.hp = Math.min(this.maxHp, this.hp + healAmt);
-        SoundEngine.playCoinSound();
-
-        // Green healing pillar effect
-        const pillarGeo = new THREE.CylinderGeometry(0.8, 0.8, 4, 16);
-        const pillarMat = new THREE.MeshBasicMaterial({ color: 0x30d158, transparent: true, opacity: 0.6 });
-        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-        pillar.position.copy(this.mesh.position);
-        pillar.position.y += 2;
-        this.scene.add(pillar);
-
-        setTimeout(() => {
-            this.scene.remove(pillar);
-            pillarGeo.dispose();
-            pillarMat.dispose();
-        }, 400);
-
-        return healAmt;
     }
 
     takeDamage(amount) {
@@ -310,15 +396,13 @@ class Player {
         this.hp -= damageTaken;
         SoundEngine.playHitSound();
 
-        // Brief damage flash
+        // Red flash
         this.bodyMesh.material.emissive.setHex(0xff0000);
         setTimeout(() => {
             this.bodyMesh.material.emissive.setHex(0x000000);
         }, 120);
 
-        if (this.hp <= 0) {
-            this.hp = 0;
-        }
+        if (this.hp <= 0) this.hp = 0;
         return damageTaken;
     }
 
@@ -329,12 +413,12 @@ class Player {
             this.xp -= this.xpToNextLevel;
             this.level++;
             this.xpToNextLevel = Math.round(this.xpToNextLevel * 1.5);
-            this.maxHp += 20;
+            this.maxHp += 25;
             this.hp = this.maxHp;
-            this.maxMp += 10;
+            this.maxMp += 15;
             this.mp = this.maxMp;
-            this.attackPower += 6;
-            this.defense += 2;
+            this.attackPower += 8;
+            this.defense += 3;
             leveledUp = true;
             SoundEngine.playLevelUpSound();
         }

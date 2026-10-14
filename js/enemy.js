@@ -1,47 +1,59 @@
 /**
- * Enemy.js - Monster AI Types, Wave Manager, and Loot Drop System
+ * Enemy.js - DNF Style Monsters with Stagger, Knockback, Floating Air Physics, and Multi-HP Bosses
  */
 
 class Enemy {
-    constructor(scene, type = 'slime', x = 0, z = 0, level = 1) {
+    constructor(scene, type = 'goblin', x = 0, z = 0, level = 1) {
         this.scene = scene;
         this.type = type;
         this.isAlive = true;
         this.level = level;
         this.attackTimer = 0;
 
-        // Base Enemy Parameters by Type
+        // Knockback & Floating Physics Variables (受击与击退/浮空物理)
+        this.velocity = new THREE.Vector3(0, 0, 0);
+        this.airHeight = 0;
+        this.gravity = 0.018;
+        this.isStaggered = false;
+        this.staggerTimer = 0;
+
+        // DNF Monster Configs
         const configs = {
-            slime: {
-                hp: 40 + level * 10,
-                damage: 8 + level * 2,
-                speed: 0.05 + Math.random() * 0.02,
-                color: 0x30d158,
-                radius: 0.6,
-                exp: 30,
-                coins: 10
-            },
-            skeleton: {
-                hp: 80 + level * 20,
-                damage: 16 + level * 4,
+            goblin: {
+                name: '哥布林',
+                hp: 60 + level * 15,
+                damage: 10 + level * 3,
                 speed: 0.08 + Math.random() * 0.02,
-                color: 0xe2e8f0,
-                radius: 0.8,
-                exp: 65,
-                coins: 25
+                color: 0x228b22,
+                radius: 0.6,
+                exp: 35,
+                coins: 12
+            },
+            tau: {
+                name: '牛头巨兽',
+                hp: 180 + level * 40,
+                damage: 22 + level * 5,
+                speed: 0.06,
+                color: 0x8b4513,
+                radius: 1.1,
+                exp: 90,
+                coins: 35
             },
             boss: {
-                hp: 400 + level * 120,
-                damage: 30 + level * 8,
-                speed: 0.06,
-                color: 0xff2d55,
+                name: '深渊魔王',
+                hp: 1200 + level * 300,
+                damage: 38 + level * 10,
+                speed: 0.07,
+                color: 0x800020,
                 radius: 1.8,
-                exp: 300,
-                coins: 120
+                exp: 500,
+                coins: 200,
+                hpBars: 5 // 5-layer DNF Boss HP Bar
             }
         };
 
-        const cfg = configs[type] || configs.slime;
+        const cfg = configs[type] || configs.goblin;
+        this.name = cfg.name;
         this.maxHp = cfg.hp;
         this.hp = cfg.hp;
         this.damage = cfg.damage;
@@ -49,74 +61,70 @@ class Enemy {
         this.radius = cfg.radius;
         this.expVal = cfg.exp;
         this.coinVal = cfg.coins;
+        this.hpBars = cfg.hpBars || 1;
 
         // Mesh Construction
         this.mesh = new THREE.Group();
 
-        if (this.type === 'slime') {
-            const bodyGeo = new THREE.SphereGeometry(this.radius, 16, 12);
-            bodyGeo.scale(1, 0.7, 1);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.2, transparent: true, opacity: 0.85 });
+        if (this.type === 'goblin') {
+            const bodyGeo = new THREE.CylinderGeometry(0.35, 0.25, 1.1, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.4 });
             this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            this.bodyMesh.position.y = this.radius * 0.7;
+            this.bodyMesh.position.y = 0.55;
             this.bodyMesh.castShadow = true;
             this.mesh.add(this.bodyMesh);
 
-            // Eyes
-            const eyeGeo = new THREE.SphereGeometry(0.1, 8, 8);
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-            const eye1 = new THREE.Mesh(eyeGeo, eyeMat);
-            eye1.position.set(-0.2, this.radius * 0.7 + 0.1, 0.45);
-            const eye2 = new THREE.Mesh(eyeGeo, eyeMat);
-            eye2.position.set(0.2, this.radius * 0.7 + 0.1, 0.45);
-            this.mesh.add(eye1);
-            this.mesh.add(eye2);
-        } else if (this.type === 'skeleton') {
-            const bodyGeo = new THREE.CylinderGeometry(0.3, 0.25, 1.3, 8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.6 });
+            // Pointed Ears
+            const earGeo = new THREE.ConeGeometry(0.12, 0.4, 4);
+            const earMat = new THREE.MeshStandardMaterial({ color: 0x1e7b1e });
+            const earL = new THREE.Mesh(earGeo, earMat);
+            earL.position.set(-0.35, 0.9, 0);
+            earL.rotation.z = 0.8;
+            const earR = new THREE.Mesh(earGeo, earMat);
+            earR.position.set(0.35, 0.9, 0);
+            earR.rotation.z = -0.8;
+            this.mesh.add(earL);
+            this.mesh.add(earR);
+        } else if (this.type === 'tau') {
+            const bodyGeo = new THREE.BoxGeometry(1.2, 1.8, 0.9);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.6 });
             this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            this.bodyMesh.position.y = 0.65;
+            this.bodyMesh.position.y = 0.9;
             this.bodyMesh.castShadow = true;
             this.mesh.add(this.bodyMesh);
 
-            const skullGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            const skullMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const skull = new THREE.Mesh(skullGeo, skullMat);
-            skull.position.y = 1.5;
-            skull.castShadow = true;
-            this.mesh.add(skull);
-
-            // Red glowing eyes
-            const eyeGeo = new THREE.BoxGeometry(0.08, 0.08, 0.1);
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            const e1 = new THREE.Mesh(eyeGeo, eyeMat);
-            e1.position.set(-0.1, 1.52, 0.2);
-            const e2 = new THREE.Mesh(eyeGeo, eyeMat);
-            e2.position.set(0.1, 1.52, 0.2);
-            this.mesh.add(e1);
-            this.mesh.add(e2);
-        } else if (this.type === 'boss') {
-            const bodyGeo = new THREE.ConeGeometry(this.radius, 3.2, 8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x800020, roughness: 0.3, metalness: 0.5 });
-            this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            this.bodyMesh.position.y = 1.6;
-            this.bodyMesh.castShadow = true;
-            this.mesh.add(this.bodyMesh);
-
-            // Horns
+            // Tau Horns
             const hornGeo = new THREE.ConeGeometry(0.2, 0.8, 6);
             const hornMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8 });
             const h1 = new THREE.Mesh(hornGeo, hornMat);
-            h1.position.set(-0.6, 2.8, 0);
-            h1.rotation.z = 0.4;
+            h1.position.set(-0.5, 1.9, 0);
+            h1.rotation.z = 0.5;
             const h2 = new THREE.Mesh(hornGeo, hornMat);
-            h2.position.set(0.6, 2.8, 0);
-            h2.rotation.z = -0.4;
+            h2.position.set(0.5, 1.9, 0);
+            h2.rotation.z = -0.5;
             this.mesh.add(h1);
             this.mesh.add(h2);
+        } else if (this.type === 'boss') {
+            const bodyGeo = new THREE.CylinderGeometry(1.1, 0.8, 2.8, 10);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.2, metalness: 0.6 });
+            this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+            this.bodyMesh.position.y = 1.4;
+            this.bodyMesh.castShadow = true;
+            this.mesh.add(this.bodyMesh);
+
+            // Giant Demon Wings
+            const wingGeo = new THREE.BoxGeometry(1.8, 1.2, 0.1);
+            const wingMat = new THREE.MeshBasicMaterial({ color: 0x330011 });
+            const w1 = new THREE.Mesh(wingGeo, wingMat);
+            w1.position.set(-1.2, 2.0, -0.4);
+            w1.rotation.y = 0.4;
+            const w2 = new THREE.Mesh(wingGeo, wingMat);
+            w2.position.set(1.2, 2.0, -0.4);
+            w2.rotation.y = -0.4;
+            this.mesh.add(w1);
+            this.mesh.add(w2);
         }
 
-        // World Position
         this.mesh.position.set(x, 0, z);
         this.scene.add(this.mesh);
     }
@@ -124,35 +132,54 @@ class Enemy {
     update(dt, playerPos, onAttackPlayerCallback) {
         if (!this.isAlive) return;
 
-        // Distance to Player
+        // Apply Knockback Velocity
+        if (this.velocity.lengthSq() > 0.0001) {
+            this.mesh.position.add(this.velocity);
+            this.velocity.multiplyScalar(0.85); // Friction
+        }
+
+        // Apply Launch Floating Physics (受击浮空)
+        if (this.airHeight > 0 || this.velocity.y > 0) {
+            this.airHeight += this.velocity.y;
+            this.velocity.y -= this.gravity;
+
+            if (this.airHeight <= 0) {
+                this.airHeight = 0;
+                this.velocity.y = 0;
+            }
+            this.mesh.position.y = this.airHeight;
+        }
+
+        // Stagger Recovery
+        if (this.isStaggered) {
+            this.staggerTimer -= dt;
+            if (this.staggerTimer <= 0 && this.airHeight <= 0) {
+                this.isStaggered = false;
+            }
+            return; // Cannot act while staggered in air or hit stun
+        }
+
+        // Distance & AI Movement to Player
         const dx = playerPos.x - this.mesh.position.x;
         const dz = playerPos.z - this.mesh.position.z;
         const dist = Math.hypot(dx, dz);
 
-        // Aggro Range check (18 units)
-        if (dist < 18) {
+        // Face player
+        this.mesh.rotation.y = Math.atan2(dx, dz);
+
+        const attackRange = (this.type === 'boss') ? 2.6 : 1.5;
+
+        if (dist > attackRange) {
+            // Move towards player
             const angle = Math.atan2(dx, dz);
-            this.mesh.rotation.y = angle;
-
-            // Attack Distance Threshold
-            const attackDist = (this.type === 'boss') ? 2.5 : 1.4;
-
-            if (dist > attackDist) {
-                // Chase movement
-                this.mesh.position.x += Math.sin(angle) * this.speed;
-                this.mesh.position.z += Math.cos(angle) * this.speed;
-
-                // Slime squish / walking animation
-                if (this.type === 'slime') {
-                    this.bodyMesh.scale.y = 0.7 + Math.sin(Date.now() * 0.01) * 0.15;
-                }
-            } else {
-                // Attack Cooldown Check
-                if (this.attackTimer <= 0) {
-                    this.attackTimer = (this.type === 'boss') ? 1.5 : 1.0;
-                    if (onAttackPlayerCallback) {
-                        onAttackPlayerCallback(this.damage);
-                    }
+            this.mesh.position.x += Math.sin(angle) * this.speed;
+            this.mesh.position.z += Math.cos(angle) * this.speed;
+        } else {
+            // Attack Player
+            if (this.attackTimer <= 0) {
+                this.attackTimer = (this.type === 'boss') ? 1.4 : 1.1;
+                if (onAttackPlayerCallback) {
+                    onAttackPlayerCallback(this.damage);
                 }
             }
         }
@@ -160,26 +187,42 @@ class Enemy {
         if (this.attackTimer > 0) {
             this.attackTimer -= dt;
         }
+
+        // Room boundary constraints
+        this.mesh.position.x = Math.max(-16.5, Math.min(16.5, this.mesh.position.x));
+        this.mesh.position.z = Math.max(-5.5, Math.min(5.5, this.mesh.position.z));
     }
 
-    takeDamage(amount) {
+    takeHit(amount, knockbackVal = 1.0, launchVal = 0.0, hitDirSign = 1) {
         this.hp -= amount;
 
-        // Damage flash highlight
+        // Apply Knockback & Stagger
+        this.isStaggered = true;
+        this.staggerTimer = 0.35;
+        this.velocity.x = hitDirSign * knockbackVal * 0.18;
+        this.velocity.z = (Math.random() - 0.5) * 0.05;
+
+        // Apply Air Launch
+        if (launchVal > 0) {
+            this.velocity.y = launchVal * 0.12;
+        }
+
+        // Hit Flash
         if (this.bodyMesh && this.bodyMesh.material) {
-            const originalHex = this.bodyMesh.material.color.getHex();
+            const origHex = this.bodyMesh.material.color.getHex();
             this.bodyMesh.material.color.setHex(0xffffff);
             setTimeout(() => {
                 if (this.bodyMesh && this.bodyMesh.material) {
-                    this.bodyMesh.material.color.setHex(originalHex);
+                    this.bodyMesh.material.color.setHex(origHex);
                 }
             }, 100);
         }
 
         if (this.hp <= 0) {
+            this.hp = 0;
             this.isAlive = false;
             this.destroy();
-            return true; // Enemy defeated
+            return true; // Defeated
         }
         return false;
     }
@@ -190,65 +233,67 @@ class Enemy {
 }
 
 class WaveManager {
-    constructor(scene, stage = 1) {
+    constructor(scene, stage = 1, currentRoom = 1, maxRooms = 3) {
         this.scene = scene;
         this.stage = stage;
-        this.currentWave = 1;
-        this.maxWaves = 3;
+        this.currentRoom = currentRoom;
+        this.maxRooms = maxRooms;
         this.enemies = [];
-        this.isWaveInProgress = false;
-        this.totalKillsInStage = 0;
+        this.roomCleared = false;
+
+        this.spawnRoomEnemies();
     }
 
-    startWave() {
+    spawnRoomEnemies() {
         this.enemies = [];
-        this.isWaveInProgress = true;
+        this.roomCleared = false;
 
-        const count = 4 + this.stage * 2 + this.currentWave * 2;
-        const radius = 12 + Math.random() * 6;
+        const isBossRoom = (this.currentRoom === this.maxRooms);
 
-        for (let i = 0; i < count; i++) {
-            const angle = (i / count) * Math.PI * 2;
-            const spawnX = Math.sin(angle) * radius;
-            const spawnZ = Math.cos(angle) * radius;
+        if (isBossRoom) {
+            // Boss Room
+            const boss = new Enemy(this.scene, 'boss', 8, 0, this.stage);
+            this.enemies.push(boss);
 
-            let type = 'slime';
-            const roll = Math.random();
-            if (this.currentWave === this.maxWaves && i === 0) {
-                type = 'boss';
-            } else if (roll > 0.5) {
-                type = 'skeleton';
+            // Minions
+            for (let i = 0; i < 3; i++) {
+                const mob = new Enemy(this.scene, 'goblin', 6 + i * 2, (i - 1) * 3, this.stage);
+                this.enemies.push(mob);
             }
-
-            const enemy = new Enemy(this.scene, type, spawnX, spawnZ, this.stage);
-            this.enemies.push(enemy);
+        } else {
+            // Mob Room
+            const count = 4 + this.currentRoom * 2;
+            for (let i = 0; i < count; i++) {
+                const type = (Math.random() < 0.6) ? 'goblin' : 'tau';
+                const spawnX = (Math.random() * 16) - 2; // Right half of room
+                const spawnZ = (Math.random() * 8) - 4;
+                const mob = new Enemy(this.scene, type, spawnX, spawnZ, this.stage);
+                this.enemies.push(mob);
+            }
         }
     }
 
     update(dt, playerPos, onAttackPlayer) {
         let activeEnemies = 0;
+        let activeBoss = null;
 
         for (let i = 0; i < this.enemies.length; i++) {
             const enemy = this.enemies[i];
             if (enemy.isAlive) {
                 enemy.update(dt, playerPos, onAttackPlayer);
                 activeEnemies++;
+                if (enemy.type === 'boss') activeBoss = enemy;
             }
         }
 
-        // Check if current wave is cleared
-        if (this.isWaveInProgress && activeEnemies === 0) {
-            this.isWaveInProgress = false;
-            if (this.currentWave < this.maxWaves) {
-                this.currentWave++;
-                setTimeout(() => this.startWave(), 2000);
-            }
+        if (activeEnemies === 0 && !this.roomCleared) {
+            this.roomCleared = true;
         }
 
         return {
-            waveCleared: !this.isWaveInProgress && activeEnemies === 0,
-            allWavesCleared: this.currentWave >= this.maxWaves && activeEnemies === 0,
-            remainingEnemies: activeEnemies
+            roomCleared: this.roomCleared,
+            remainingEnemies: activeEnemies,
+            bossEnemy: activeBoss
         };
     }
 }

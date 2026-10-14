@@ -1,21 +1,19 @@
 /**
- * Controls.js - Keyboard, Mouse, Touch & Virtual Joystick Input Handler for 2.5D ARPG
+ * Controls.js - DNF Style Arcade Keybindings & Virtual Joystick Handler
  */
 
 const Controls = (() => {
     const keys = {
         w: false, a: false, s: false, d: false,
-        ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false,
-        Space: false,
-        j: false, k: false, l: false, h: false,
-        Key1: false, Key2: false
+        ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false
     };
 
-    let mouseWorldPos = null;
     let onAttackTriggered = null;
-    let onDashTriggered = null;
-    let onSpellTriggered = null;
-    let onHealTriggered = null;
+    let onUpperTriggered = null;
+    let onGhostTriggered = null;
+    let onTripleTriggered = null;
+    let onWaveTriggered = null;
+    let onBackstepTriggered = null;
     let onPauseTriggered = null;
 
     // Virtual Joystick State
@@ -25,17 +23,17 @@ const Controls = (() => {
 
     function init(callbacks = {}) {
         onAttackTriggered = callbacks.onAttack;
-        onDashTriggered = callbacks.onDash;
-        onSpellTriggered = callbacks.onSpell;
-        onHealTriggered = callbacks.onHeal;
+        onUpperTriggered = callbacks.onUpper;
+        onGhostTriggered = callbacks.onGhost;
+        onTripleTriggered = callbacks.onTriple;
+        onWaveTriggered = callbacks.onWave;
+        onBackstepTriggered = callbacks.onBackstep;
         onPauseTriggered = callbacks.onPause;
 
         window.addEventListener('keydown', onKeyDown);
         window.addEventListener('keyup', onKeyUp);
-        window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mousedown', onMouseDown);
 
-        // Virtual Joystick Event Setup
         setupVirtualJoystick();
     }
 
@@ -44,7 +42,7 @@ const Controls = (() => {
         const stick = document.getElementById('joystick-stick');
         if (!zone || !stick) return;
 
-        const maxRadius = 45; // Max drag distance from center
+        const maxRadius = 45;
 
         function processJoystick(clientX, clientY, rect) {
             const centerX = rect.left + rect.width / 2;
@@ -61,9 +59,8 @@ const Controls = (() => {
 
             stick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
 
-            // Normalize vector output (-1 to +1)
             joystickVector.x = deltaX / maxRadius;
-            joystickVector.z = deltaY / maxRadius; // On 2D screen, down Y maps to +Z depth
+            joystickVector.z = deltaY / maxRadius;
         }
 
         function resetJoystick() {
@@ -74,7 +71,6 @@ const Controls = (() => {
             stick.style.transform = 'translate(0px, 0px)';
         }
 
-        // Touch Listeners
         zone.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (joystickActive) return;
@@ -108,11 +104,8 @@ const Controls = (() => {
             }
         });
 
-        window.addEventListener('touchcancel', (e) => {
-            resetJoystick();
-        });
+        window.addEventListener('touchcancel', () => resetJoystick());
 
-        // Mouse Drag Support on Virtual Joystick (for desktop mouse testing)
         let isMouseDownOnJoystick = false;
 
         zone.addEventListener('mousedown', (e) => {
@@ -130,7 +123,7 @@ const Controls = (() => {
             }
         });
 
-        window.addEventListener('mouseup', (e) => {
+        window.addEventListener('mouseup', () => {
             if (isMouseDownOnJoystick) {
                 isMouseDownOnJoystick = false;
                 resetJoystick();
@@ -146,10 +139,13 @@ const Controls = (() => {
         if (key === 's' || key === 'arrowdown') keys.s = true;
         if (key === 'd' || key === 'arrowright') keys.d = true;
 
-        if (key === 'j' && onAttackTriggered) onAttackTriggered();
-        if ((key === 'k' || e.code === 'Space') && onDashTriggered) onDashTriggered();
-        if ((key === 'l' || key === '1') && onSpellTriggered) onSpellTriggered();
-        if ((key === 'h' || key === '2') && onHealTriggered) onHealTriggered();
+        // DNF Classic Action Keybindings
+        if ((key === 'x' || key === 'j') && onAttackTriggered) onAttackTriggered();
+        if ((key === 'z' || key === 'u') && onUpperTriggered) onUpperTriggered();
+        if ((key === 'q' || key === '1') && onGhostTriggered) onGhostTriggered();
+        if ((key === 'e' || key === '2') && onTripleTriggered) onTripleTriggered();
+        if ((key === 'r' || key === '3') && onWaveTriggered) onWaveTriggered();
+        if ((key === 'c' || e.code === 'Space') && onBackstepTriggered) onBackstepTriggered();
         if ((key === 'p' || key === 'escape') && onPauseTriggered) onPauseTriggered();
     }
 
@@ -162,12 +158,7 @@ const Controls = (() => {
         if (key === 'd' || key === 'arrowright') keys.d = false;
     }
 
-    function onMouseMove(e) {
-        mouseWorldPos = Engine.screenToWorldIso(e.clientX, e.clientY);
-    }
-
     function onMouseDown(e) {
-        // Only trigger attack on canvas click (not clicking UI elements or joystick)
         if (e.button === 0 && e.target.tagName === 'CANVAS' && onAttackTriggered) {
             onAttackTriggered();
         }
@@ -177,19 +168,16 @@ const Controls = (() => {
         let vx = 0;
         let vz = 0;
 
-        // Keyboard Vector
         if (keys.w || keys.ArrowUp) vz -= 1;
         if (keys.s || keys.ArrowDown) vz += 1;
         if (keys.a || keys.ArrowLeft) vx -= 1;
         if (keys.d || keys.ArrowRight) vx += 1;
 
-        // Combine Keyboard & Joystick
         if (joystickActive) {
             vx += joystickVector.x;
             vz += joystickVector.z;
         }
 
-        // Clamp combined vector magnitude to 1
         const mag = Math.hypot(vx, vz);
         if (mag > 1) {
             vx /= mag;
@@ -199,13 +187,8 @@ const Controls = (() => {
         return { x: vx, z: vz };
     }
 
-    function getMouseWorldPos() {
-        return mouseWorldPos;
-    }
-
     return {
         init,
-        getMovementVector,
-        getMouseWorldPos
+        getMovementVector
     };
 })();

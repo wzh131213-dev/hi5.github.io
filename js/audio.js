@@ -1,26 +1,31 @@
 /**
- * Audio.js - Procedural Sound Effects & Music Generator using Web Audio API
+ * Audio.js - Web Audio API Synthesizer for DNF Arcade Action SFX & Heavy Metal BGM
  */
 
 const SoundEngine = (() => {
     let ctx = null;
-    let bgmOscillator = null;
+    let bgmOsc = null;
     let bgmGain = null;
-    let isMuted = false;
-    let bgmTimer = null;
+    let isBgmPlaying = false;
 
     function init() {
-        if (!ctx) {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            ctx = new AudioCtx();
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            ctx = new AudioContext();
         }
-        if (ctx.state === 'suspended') {
+    }
+
+    function ensureContext() {
+        if (!ctx) init();
+        if (ctx && ctx.state === 'suspended') {
             ctx.resume();
         }
     }
 
-    function playTone(freq, duration, type = 'sine', startGain = 0.3, endGain = 0.001) {
-        if (!ctx || isMuted) return;
+    function playTone(freq, type, duration, startGain = 0.3, endGain = 0.01) {
+        ensureContext();
+        if (!ctx) return;
+
         try {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -37,137 +42,124 @@ const SoundEngine = (() => {
             osc.start();
             osc.stop(ctx.currentTime + duration);
         } catch (e) {
-            console.error(e);
+            console.warn("Audio play error:", e);
         }
     }
 
     function playSlashSound() {
-        if (!ctx || isMuted) return;
-        init();
-        // White noise slash effect
-        const bufferSize = ctx.sampleRate * 0.12; // 120ms
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1;
-        }
-
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(1200, ctx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.12);
-
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.4, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-
-        noise.start();
+        ensureContext();
+        if (!ctx) return;
+        playTone(320, 'sawtooth', 0.1, 0.4, 0.01);
     }
 
-    function playHitSound() {
-        if (!ctx || isMuted) return;
-        init();
-        playTone(150, 0.15, 'sawtooth', 0.4, 0.01);
-    }
+    function playLaunchSound() {
+        ensureContext();
+        if (!ctx) return;
 
-    function playSpellSound() {
-        if (!ctx || isMuted) return;
-        init();
-        // Sweeping fire frequency
         try {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(200, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
 
-            gain.gain.setValueAtTime(0.3, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(650, ctx.currentTime + 0.25);
+
+            gain.gain.setValueAtTime(0.4, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
 
             osc.start();
-            osc.stop(ctx.currentTime + 0.35);
+            osc.stop(ctx.currentTime + 0.25);
         } catch (e) {}
+    }
+
+    function playGhostSlashSound() {
+        ensureContext();
+        if (!ctx) return;
+        playTone(90, 'square', 0.4, 0.6, 0.01);
+    }
+
+    function playWaveSound() {
+        ensureContext();
+        if (!ctx) return;
+        playTone(220, 'sawtooth', 0.3, 0.5, 0.01);
     }
 
     function playDashSound() {
-        if (!ctx || isMuted) return;
-        init();
-        try {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.2);
+        ensureContext();
+        if (!ctx) return;
+        playTone(450, 'sine', 0.12, 0.3, 0.01);
+    }
 
-            gain.gain.setValueAtTime(0.3, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            osc.start();
-            osc.stop(ctx.currentTime + 0.2);
-        } catch (e) {}
+    function playHitSound() {
+        ensureContext();
+        if (!ctx) return;
+        playTone(110, 'square', 0.1, 0.5, 0.01);
     }
 
     function playCoinSound() {
-        if (!ctx || isMuted) return;
-        init();
-        playTone(987.77, 0.08, 'sine', 0.25, 0.01); // B5
-        setTimeout(() => {
-            playTone(1318.51, 0.15, 'sine', 0.25, 0.01); // E6
-        }, 80);
+        ensureContext();
+        if (!ctx) return;
+        playTone(987.77, 'sine', 0.15, 0.25, 0.01);
     }
 
     function playLevelUpSound() {
-        if (!ctx || isMuted) return;
-        init();
-        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; // C E G C E G
-        notes.forEach((freq, index) => {
+        ensureContext();
+        if (!ctx) return;
+
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
             setTimeout(() => {
-                playTone(freq, 0.2, 'triangle', 0.3, 0.01);
-            }, index * 70);
+                playTone(freq, 'triangle', 0.2, 0.3, 0.01);
+            }, idx * 90);
         });
     }
 
     function startBGM() {
-        if (!ctx) init();
-        if (bgmTimer) clearInterval(bgmTimer);
+        ensureContext();
+        if (!ctx || isBgmPlaying) return;
 
-        // Simple ambient dungeon melody generator
-        const scale = [146.83, 164.81, 174.61, 196.00, 220.00, 233.08, 261.63]; // D minor pentatonic/aeolian
-        let noteIdx = 0;
+        try {
+            isBgmPlaying = true;
+            // Synth heavy metal bass beat sequence
+            bgmOsc = ctx.createOscillator();
+            bgmGain = ctx.createGain();
 
-        bgmTimer = setInterval(() => {
-            if (isMuted) return;
-            const freq = scale[Math.floor(Math.random() * scale.length)];
-            playTone(freq, 0.8, 'sine', 0.06, 0.001);
-        }, 600);
+            bgmOsc.type = 'sawtooth';
+            bgmOsc.frequency.setValueAtTime(110, ctx.currentTime); // Low A
+
+            bgmGain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+            bgmOsc.connect(bgmGain);
+            bgmGain.connect(ctx.destination);
+
+            bgmOsc.start();
+        } catch (e) {
+            console.warn("BGM start error:", e);
+        }
     }
 
     function stopBGM() {
-        if (bgmTimer) {
-            clearInterval(bgmTimer);
-            bgmTimer = null;
+        if (bgmOsc) {
+            try {
+                bgmOsc.stop();
+                bgmOsc.disconnect();
+            } catch (e) {}
+            bgmOsc = null;
         }
+        isBgmPlaying = false;
     }
 
     return {
         init,
         playSlashSound,
-        playHitSound,
-        playSpellSound,
+        playLaunchSound,
+        playGhostSlashSound,
+        playWaveSound,
         playDashSound,
+        playHitSound,
         playCoinSound,
         playLevelUpSound,
         startBGM,
