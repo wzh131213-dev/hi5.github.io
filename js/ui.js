@@ -84,10 +84,12 @@ const UI = (() => {
             container.classList.remove('hidden');
             document.getElementById('combo-count').innerText = count;
 
-            let rank = 'EXCELLENT!';
-            if (count > 30) rank = 'UNSTOPPABLE!!';
-            else if (count > 15) rank = 'GREAT COMBOS!!';
-            else if (count > 8) rank = 'GOOD!';
+            let rank = 'C RANK';
+            if (count > 35) rank = 'SSS - 神级爆发!!';
+            else if (count > 25) rank = 'SS - 势不可挡!!';
+            else if (count > 16) rank = 'S - 卓越连击!!';
+            else if (count > 9) rank = 'A - 华丽连招!';
+            else if (count > 4) rank = 'B - 熟练Combo!';
 
             document.getElementById('combo-rank').innerText = rank;
         } else {

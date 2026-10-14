@@ -74,10 +74,14 @@ class DungeonMap {
         rightWall.position.set(this.roomWidth / 2 + 0.5, 3, 0);
         this.mapGroup.add(rightWall);
 
-        // Ornate Golden Treasure Chests
+        // Ornate Golden Treasure Chests & Breakable Wooden Barrels
         if (Math.random() < 0.75) {
             this.createChest(-this.roomWidth / 3, -this.roomDepth / 3);
         }
+
+        this.barrels = [];
+        this.createBarrel(-5, 2);
+        this.createBarrel(4, -2);
 
         this.obstacles.push({ type: 'wall_top', z: -this.roomDepth / 2 + 0.5 });
         this.obstacles.push({ type: 'wall_bottom', z: this.roomDepth / 2 - 0.5 });
@@ -106,6 +110,34 @@ class DungeonMap {
         const flame = new THREE.Mesh(flameGeo, flameMat);
         flame.position.set(x, 4.8, z + 0.85);
         this.mapGroup.add(flame);
+    }
+
+    createBarrel(x, z) {
+        const barrelGroup = new THREE.Group();
+        const bodyGeo = new THREE.CylinderGeometry(0.55, 0.5, 1.2, 10);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6e4324, roughness: 0.7 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.6;
+        body.castShadow = true;
+        barrelGroup.add(body);
+
+        const ringGeo = new THREE.CylinderGeometry(0.57, 0.57, 0.1, 10);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8 });
+        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+        ring1.position.y = 0.35;
+        const ring2 = new THREE.Mesh(ringGeo, ringMat);
+        ring2.position.y = 0.85;
+        barrelGroup.add(ring1);
+        barrelGroup.add(ring2);
+
+        barrelGroup.position.set(x, 0, z);
+        this.mapGroup.add(barrelGroup);
+
+        this.barrels.push({
+            mesh: barrelGroup,
+            pos: new THREE.Vector3(x, 0, z),
+            broken: false
+        });
     }
 
     createChest(x, z) {

@@ -24,6 +24,16 @@ body, html {
     top: 0;
     left: 0;
     z-index: 1;
+    overflow: hidden;
+}
+
+#game-container canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 /* HUD Overlay Layer */

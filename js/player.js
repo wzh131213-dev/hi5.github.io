@@ -78,12 +78,23 @@ class Player {
         ghostArm.castShadow = true;
         this.mesh.add(ghostArm);
 
-        // 3. Head, Spiked Hair & Red Scarf
+        // 3. Head, Spiked Hair & Glowing Demonic Eyes & Red Scarf
         const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
         const headMat = new THREE.MeshStandardMaterial({ color: 0xffdfc4, roughness: 0.4 });
         const headMesh = new THREE.Mesh(headGeo, headMat);
         headMesh.position.y = 1.5;
         headMesh.castShadow = true;
+
+        // Glowing Red Demonic Eyes
+        const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0022 });
+        const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeL.position.set(-0.12, 0.05, 0.3);
+        const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeR.position.set(0.12, 0.05, 0.3);
+        headMesh.add(eyeL);
+        headMesh.add(eyeR);
+
         this.mesh.add(headMesh);
 
         // Flowing Wild Red Hair Spikes
@@ -101,9 +112,9 @@ class Player {
         // Red Tattered Scarf / Cape
         const scarfGeo = new THREE.BoxGeometry(0.7, 0.2, 0.3);
         const scarfMat = new THREE.MeshStandardMaterial({ color: 0x990000, roughness: 0.6 });
-        const scarf = new THREE.Mesh(scarfGeo, scarfMat);
-        scarf.position.set(0, 1.35, -0.2);
-        this.mesh.add(scarf);
+        this.scarfMesh = new THREE.Mesh(scarfGeo, scarfMat);
+        this.scarfMesh.position.set(0, 1.35, -0.2);
+        this.mesh.add(this.scarfMesh);
 
         // 4. High-Detail Zanbato Greatsword (斩马刀)
         this.weaponGroup = new THREE.Group();
@@ -175,6 +186,12 @@ class Player {
 
         if (this.mp < this.maxMp) {
             this.mp = Math.min(this.maxMp, this.mp + 4.5 * dt);
+        }
+
+        // Scarf Cloth Sine Wave Animation
+        if (this.scarfMesh) {
+            this.scarfMesh.rotation.x = Math.sin(Date.now() * 0.008) * 0.15;
+            this.scarfMesh.position.z = -0.2 + Math.cos(Date.now() * 0.01) * 0.05;
         }
 
         if ((inputDir.x !== 0 || inputDir.z !== 0) && !this.isAttacking) {

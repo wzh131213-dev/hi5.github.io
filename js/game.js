@@ -101,10 +101,16 @@ const Game = (() => {
     }
 
     function update(dt) {
+        if (Engine.isHitStopped(dt)) {
+            Engine.render();
+            return;
+        }
+
         const inputDir = Controls.getMovementVector();
 
         player.update(dt, inputDir);
-        Engine.updateCameraTarget(player.mesh.position);
+        Engine.updateCameraTarget(player.mesh.position, 0.09, dt);
+        Engine.updateParticles(dt);
         dungeonMap.updatePortalAnimation();
 
         if (waveManager) {
@@ -162,9 +168,26 @@ const Game = (() => {
                 coins += 60;
                 score += 250;
                 SoundEngine.playCoinSound();
+                Engine.spawnSparks(chest.pos, 15, 0xffd700, 0.22, 10);
                 showScreenDamageText('+60 🪙', '#ffd700');
             }
         });
+
+        // Barrel Collision & Breaking
+        if (dungeonMap.barrels) {
+            dungeonMap.barrels.forEach(barrel => {
+                if (!barrel.broken && player.mesh.position.distanceTo(barrel.pos) < 1.6 && player.isAttacking) {
+                    barrel.broken = true;
+                    barrel.mesh.position.y -= 0.5;
+                    barrel.mesh.scale.set(0.1, 0.1, 0.1);
+                    coins += 20;
+                    score += 80;
+                    SoundEngine.playCoinSound();
+                    Engine.spawnSparks(barrel.pos, 18, 0x8b4513, 0.25, 12);
+                    showScreenDamageText('+20 🪙', '#ffd700');
+                }
+            });
+        }
     }
 
     function addComboHit(count = 1) {
@@ -233,15 +256,29 @@ const Game = (() => {
             const inDepth = Math.abs(dz) <= 2.2;
 
             if (inFront && inDepth) {
+                // Critical Hit Calculation (30% chance)
+                const isCrit = Math.random() < 0.30;
+                const finalDamage = isCrit ? damage * 1.75 : damage;
+
                 const isDead = enemy.takeHit(
-                    damage,
+                    finalDamage,
                     physics.knockback || 1.0,
                     physics.launch || 0.0,
                     dirX
                 );
 
+                // FX Triggers
+                Engine.spawnSparks(enemy.mesh.position, isCrit ? 20 : 10, isCrit ? 0xff3300 : 0xffcc00, 0.2, 9);
+                Engine.triggerShake(isCrit ? 0.6 : 0.3, isCrit ? 0.25 : 0.15);
+                Engine.triggerHitStop(isCrit ? 80 : 45);
+
                 addComboHit(physics.comboCount || 1);
-                showScreenDamageText(`-${Math.round(damage)}`, '#ffcc00');
+
+                if (isCrit) {
+                    showScreenDamageText(`CRIT! -${Math.round(finalDamage)}`, '#ff3300');
+                } else {
+                    showScreenDamageText(`-${Math.round(finalDamage)}`, '#ffcc00');
+                }
 
                 if (isDead) {
                     totalKills++;
