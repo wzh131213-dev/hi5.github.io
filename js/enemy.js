@@ -1,5 +1,5 @@
 /**
- * Enemy.js - DNF Style Monsters with Stagger, Knockback, Floating Air Physics, and Multi-HP Bosses
+ * Enemy.js - High-Detail DNF Monsters & Bosses
  */
 
 class Enemy {
@@ -10,45 +10,44 @@ class Enemy {
         this.level = level;
         this.attackTimer = 0;
 
-        // Knockback & Floating Physics Variables (受击与击退/浮空物理)
+        // Knockback & Floating Physics Variables
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.airHeight = 0;
         this.gravity = 0.018;
         this.isStaggered = false;
         this.staggerTimer = 0;
 
-        // DNF Monster Configs
         const configs = {
             goblin: {
-                name: '哥布林',
-                hp: 60 + level * 15,
-                damage: 10 + level * 3,
+                name: '哥布林精锐',
+                hp: 70 + level * 18,
+                damage: 12 + level * 3,
                 speed: 0.08 + Math.random() * 0.02,
-                color: 0x228b22,
-                radius: 0.6,
-                exp: 35,
-                coins: 12
+                color: 0x2e8b57,
+                radius: 0.65,
+                exp: 40,
+                coins: 15
             },
             tau: {
-                name: '牛头巨兽',
-                hp: 180 + level * 40,
-                damage: 22 + level * 5,
-                speed: 0.06,
+                name: '牛头巨兽领主',
+                hp: 220 + level * 50,
+                damage: 25 + level * 6,
+                speed: 0.065,
                 color: 0x8b4513,
-                radius: 1.1,
-                exp: 90,
-                coins: 35
+                radius: 1.25,
+                exp: 100,
+                coins: 40
             },
             boss: {
-                name: '深渊魔王',
-                hp: 1200 + level * 300,
-                damage: 38 + level * 10,
-                speed: 0.07,
+                name: '深渊魔王·卡赞',
+                hp: 1500 + level * 400,
+                damage: 42 + level * 12,
+                speed: 0.075,
                 color: 0x800020,
-                radius: 1.8,
-                exp: 500,
-                coins: 200,
-                hpBars: 5 // 5-layer DNF Boss HP Bar
+                radius: 1.9,
+                exp: 600,
+                coins: 250,
+                hpBars: 5
             }
         };
 
@@ -67,62 +66,107 @@ class Enemy {
         this.mesh = new THREE.Group();
 
         if (this.type === 'goblin') {
-            const bodyGeo = new THREE.CylinderGeometry(0.35, 0.25, 1.1, 8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.4 });
+            // High-detail Goblin Warrior with Leather Armor
+            const bodyGeo = new THREE.CylinderGeometry(0.38, 0.28, 1.2, 10);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.35 });
             this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            this.bodyMesh.position.y = 0.55;
+            this.bodyMesh.position.y = 0.6;
             this.bodyMesh.castShadow = true;
             this.mesh.add(this.bodyMesh);
 
-            // Pointed Ears
-            const earGeo = new THREE.ConeGeometry(0.12, 0.4, 4);
+            // Spiked Wooden Shield
+            const shieldGeo = new THREE.BoxGeometry(0.1, 0.7, 0.5);
+            const shieldMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.7 });
+            const shield = new THREE.Mesh(shieldGeo, shieldMat);
+            shield.position.set(-0.45, 0.6, 0.2);
+            shield.castShadow = true;
+            this.mesh.add(shield);
+
+            // Pointed Ears & Glowing Eyes
+            const earGeo = new THREE.ConeGeometry(0.14, 0.45, 5);
             const earMat = new THREE.MeshStandardMaterial({ color: 0x1e7b1e });
             const earL = new THREE.Mesh(earGeo, earMat);
-            earL.position.set(-0.35, 0.9, 0);
+            earL.position.set(-0.38, 1.0, 0);
             earL.rotation.z = 0.8;
             const earR = new THREE.Mesh(earGeo, earMat);
-            earR.position.set(0.35, 0.9, 0);
+            earR.position.set(0.38, 1.0, 0);
             earR.rotation.z = -0.8;
             this.mesh.add(earL);
             this.mesh.add(earR);
+
+            const eyeGeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3300 });
+            const e1 = new THREE.Mesh(eyeGeo, eyeMat);
+            e1.position.set(-0.12, 1.0, 0.3);
+            const e2 = new THREE.Mesh(eyeGeo, eyeMat);
+            e2.position.set(0.12, 1.0, 0.3);
+            this.mesh.add(e1);
+            this.mesh.add(e2);
+
         } else if (this.type === 'tau') {
-            const bodyGeo = new THREE.BoxGeometry(1.2, 1.8, 0.9);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.6 });
+            // High-detail Tau Warrior with Iron Guards & Curved Horns
+            const bodyGeo = new THREE.BoxGeometry(1.3, 1.9, 1.0);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.5, metalness: 0.3 });
             this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            this.bodyMesh.position.y = 0.9;
+            this.bodyMesh.position.y = 0.95;
             this.bodyMesh.castShadow = true;
             this.mesh.add(this.bodyMesh);
 
-            // Tau Horns
-            const hornGeo = new THREE.ConeGeometry(0.2, 0.8, 6);
-            const hornMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8 });
+            // Metallic Shoulder Guards
+            const guardGeo = new THREE.BoxGeometry(0.4, 0.5, 0.6);
+            const guardMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.8, roughness: 0.2 });
+            const g1 = new THREE.Mesh(guardGeo, guardMat);
+            g1.position.set(-0.75, 1.5, 0);
+            const g2 = new THREE.Mesh(guardGeo, guardMat);
+            g2.position.set(0.75, 1.5, 0);
+            this.mesh.add(g1);
+            this.mesh.add(g2);
+
+            // Massive Horns
+            const hornGeo = new THREE.ConeGeometry(0.24, 0.95, 8);
+            const hornMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 });
             const h1 = new THREE.Mesh(hornGeo, hornMat);
-            h1.position.set(-0.5, 1.9, 0);
-            h1.rotation.z = 0.5;
+            h1.position.set(-0.55, 2.05, 0);
+            h1.rotation.z = 0.55;
             const h2 = new THREE.Mesh(hornGeo, hornMat);
-            h2.position.set(0.5, 1.9, 0);
-            h2.rotation.z = -0.5;
+            h2.position.set(0.55, 2.05, 0);
+            h2.rotation.z = -0.55;
             this.mesh.add(h1);
             this.mesh.add(h2);
+
         } else if (this.type === 'boss') {
-            const bodyGeo = new THREE.CylinderGeometry(1.1, 0.8, 2.8, 10);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.2, metalness: 0.6 });
+            // High-detail Boss Abyss Demon Lord
+            const bodyGeo = new THREE.CylinderGeometry(1.2, 0.85, 3.0, 12);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: cfg.color,
+                roughness: 0.2,
+                metalness: 0.7,
+                emissive: 0x330000,
+                emissiveIntensity: 0.6
+            });
             this.bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            this.bodyMesh.position.y = 1.4;
+            this.bodyMesh.position.y = 1.5;
             this.bodyMesh.castShadow = true;
             this.mesh.add(this.bodyMesh);
 
-            // Giant Demon Wings
-            const wingGeo = new THREE.BoxGeometry(1.8, 1.2, 0.1);
-            const wingMat = new THREE.MeshBasicMaterial({ color: 0x330011 });
-            const w1 = new THREE.Mesh(wingGeo, wingMat);
-            w1.position.set(-1.2, 2.0, -0.4);
-            w1.rotation.y = 0.4;
-            const w2 = new THREE.Mesh(wingGeo, wingMat);
-            w2.position.set(1.2, 2.0, -0.4);
-            w2.rotation.y = -0.4;
-            this.mesh.add(w1);
-            this.mesh.add(w2);
+            // Crowned Horned Skull Helmet
+            const crownGeo = new THREE.ConeGeometry(0.6, 1.2, 6);
+            const crownMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.95 });
+            const crown = new THREE.Mesh(crownGeo, crownMat);
+            crown.position.set(0, 3.4, 0);
+            this.mesh.add(crown);
+
+            // Giant Animated Demon Wings
+            const wingGeo = new THREE.BoxGeometry(2.2, 1.4, 0.12);
+            const wingMat = new THREE.MeshStandardMaterial({ color: 0x220008, roughness: 0.2, metalness: 0.8 });
+            this.w1 = new THREE.Mesh(wingGeo, wingMat);
+            this.w1.position.set(-1.4, 2.2, -0.4);
+            this.w1.rotation.y = 0.45;
+            this.w2 = new THREE.Mesh(wingGeo, wingMat);
+            this.w2.position.set(1.4, 2.2, -0.4);
+            this.w2.rotation.y = -0.45;
+            this.mesh.add(this.w1);
+            this.mesh.add(this.w2);
         }
 
         this.mesh.position.set(x, 0, z);
@@ -132,13 +176,16 @@ class Enemy {
     update(dt, playerPos, onAttackPlayerCallback) {
         if (!this.isAlive) return;
 
-        // Apply Knockback Velocity
-        if (this.velocity.lengthSq() > 0.0001) {
-            this.mesh.position.add(this.velocity);
-            this.velocity.multiplyScalar(0.85); // Friction
+        if (this.type === 'boss' && this.w1 && this.w2) {
+            this.w1.rotation.y = 0.45 + Math.sin(Date.now() * 0.005) * 0.15;
+            this.w2.rotation.y = -0.45 - Math.sin(Date.now() * 0.005) * 0.15;
         }
 
-        // Apply Launch Floating Physics (受击浮空)
+        if (this.velocity.lengthSq() > 0.0001) {
+            this.mesh.position.add(this.velocity);
+            this.velocity.multiplyScalar(0.85);
+        }
+
         if (this.airHeight > 0 || this.velocity.y > 0) {
             this.airHeight += this.velocity.y;
             this.velocity.y -= this.gravity;
@@ -150,32 +197,27 @@ class Enemy {
             this.mesh.position.y = this.airHeight;
         }
 
-        // Stagger Recovery
         if (this.isStaggered) {
             this.staggerTimer -= dt;
             if (this.staggerTimer <= 0 && this.airHeight <= 0) {
                 this.isStaggered = false;
             }
-            return; // Cannot act while staggered in air or hit stun
+            return;
         }
 
-        // Distance & AI Movement to Player
         const dx = playerPos.x - this.mesh.position.x;
         const dz = playerPos.z - this.mesh.position.z;
         const dist = Math.hypot(dx, dz);
 
-        // Face player
         this.mesh.rotation.y = Math.atan2(dx, dz);
 
-        const attackRange = (this.type === 'boss') ? 2.6 : 1.5;
+        const attackRange = (this.type === 'boss') ? 2.8 : 1.5;
 
         if (dist > attackRange) {
-            // Move towards player
             const angle = Math.atan2(dx, dz);
             this.mesh.position.x += Math.sin(angle) * this.speed;
             this.mesh.position.z += Math.cos(angle) * this.speed;
         } else {
-            // Attack Player
             if (this.attackTimer <= 0) {
                 this.attackTimer = (this.type === 'boss') ? 1.4 : 1.1;
                 if (onAttackPlayerCallback) {
@@ -188,7 +230,6 @@ class Enemy {
             this.attackTimer -= dt;
         }
 
-        // Room boundary constraints
         this.mesh.position.x = Math.max(-16.5, Math.min(16.5, this.mesh.position.x));
         this.mesh.position.z = Math.max(-5.5, Math.min(5.5, this.mesh.position.z));
     }
@@ -196,18 +237,15 @@ class Enemy {
     takeHit(amount, knockbackVal = 1.0, launchVal = 0.0, hitDirSign = 1) {
         this.hp -= amount;
 
-        // Apply Knockback & Stagger
         this.isStaggered = true;
         this.staggerTimer = 0.35;
         this.velocity.x = hitDirSign * knockbackVal * 0.18;
         this.velocity.z = (Math.random() - 0.5) * 0.05;
 
-        // Apply Air Launch
         if (launchVal > 0) {
             this.velocity.y = launchVal * 0.12;
         }
 
-        // Hit Flash
         if (this.bodyMesh && this.bodyMesh.material) {
             const origHex = this.bodyMesh.material.color.getHex();
             this.bodyMesh.material.color.setHex(0xffffff);
@@ -222,7 +260,7 @@ class Enemy {
             this.hp = 0;
             this.isAlive = false;
             this.destroy();
-            return true; // Defeated
+            return true;
         }
         return false;
     }
@@ -251,21 +289,18 @@ class WaveManager {
         const isBossRoom = (this.currentRoom === this.maxRooms);
 
         if (isBossRoom) {
-            // Boss Room
             const boss = new Enemy(this.scene, 'boss', 8, 0, this.stage);
             this.enemies.push(boss);
 
-            // Minions
             for (let i = 0; i < 3; i++) {
                 const mob = new Enemy(this.scene, 'goblin', 6 + i * 2, (i - 1) * 3, this.stage);
                 this.enemies.push(mob);
             }
         } else {
-            // Mob Room
             const count = 4 + this.currentRoom * 2;
             for (let i = 0; i < count; i++) {
                 const type = (Math.random() < 0.6) ? 'goblin' : 'tau';
-                const spawnX = (Math.random() * 16) - 2; // Right half of room
+                const spawnX = (Math.random() * 16) - 2;
                 const spawnZ = (Math.random() * 8) - 4;
                 const mob = new Enemy(this.scene, type, spawnX, spawnZ, this.stage);
                 this.enemies.push(mob);

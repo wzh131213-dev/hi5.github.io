@@ -1,5 +1,5 @@
 /**
- * Map.js - DNF Style Sequential Room Belt-Scroll Stage Generator
+ * Map.js - High-Detail DNF Gothic Dungeon Architecture
  */
 
 class DungeonMap {
@@ -9,7 +9,6 @@ class DungeonMap {
         this.currentRoom = currentRoom;
         this.maxRooms = maxRooms;
 
-        // Belt-scroll room dimensions (Length along X, Depth along Z)
         this.roomWidth = 36;
         this.roomDepth = 14;
 
@@ -23,7 +22,6 @@ class DungeonMap {
     }
 
     generateRoom() {
-        // Clear old meshes
         while (this.mapGroup.children.length > 0) {
             const obj = this.mapGroup.children[0];
             this.mapGroup.remove(obj);
@@ -31,108 +29,98 @@ class DungeonMap {
         this.obstacles = [];
         this.chests = [];
 
-        // Floor Tiles & DNF Dark Dungeon Aesthetics
+        // Carved Stone Floor Tiles with Specular Metalness
         const floorGeo = new THREE.PlaneGeometry(this.roomWidth, this.roomDepth);
         const floorMat = new THREE.MeshStandardMaterial({
-            color: (this.currentRoom === this.maxRooms) ? 0x22121e : 0x181e2e,
-            roughness: 0.7,
-            metalness: 0.2
+            color: (this.currentRoom === this.maxRooms) ? 0x281628 : 0x1a2238,
+            roughness: 0.5,
+            metalness: 0.3
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         this.mapGroup.add(floor);
 
-        // Floor Grid Lines Texture Effect
-        const gridHelper = new THREE.GridHelper(this.roomWidth, 18, 0x3d4b70, 0x232d47);
+        // Floor Grid Pattern
+        const gridHelper = new THREE.GridHelper(this.roomWidth, 24, 0x4a5d8e, 0x2b3859);
         gridHelper.position.y = 0.02;
         gridHelper.scale.set(1, 1, this.roomDepth / this.roomWidth);
         this.mapGroup.add(gridHelper);
 
-        // Top Back Wall (Dungeon stone wall with decorative arches/torches)
-        const backWallGeo = new THREE.BoxGeometry(this.roomWidth + 2, 8, 1);
-        const backWallMat = new THREE.MeshStandardMaterial({ color: 0x1c2338, roughness: 0.8 });
+        // Gothic Rear Stone Wall
+        const backWallGeo = new THREE.BoxGeometry(this.roomWidth + 2, 8.5, 1);
+        const backWallMat = new THREE.MeshStandardMaterial({ color: 0x1a2136, roughness: 0.7 });
         const backWall = new THREE.Mesh(backWallGeo, backWallMat);
-        backWall.position.set(0, 4, -this.roomDepth / 2 - 0.5);
+        backWall.position.set(0, 4.25, -this.roomDepth / 2 - 0.5);
         backWall.castShadow = true;
         backWall.receiveShadow = true;
         this.mapGroup.add(backWall);
 
-        // Front Lower Boundary Wall
-        const frontWallGeo = new THREE.BoxGeometry(this.roomWidth + 2, 2, 1);
-        const frontWallMat = new THREE.MeshStandardMaterial({ color: 0x111522, roughness: 0.9 });
-        const frontWall = new THREE.Mesh(frontWallGeo, frontWallMat);
-        frontWall.position.set(0, 1, this.roomDepth / 2 + 0.5);
-        this.mapGroup.add(frontWall);
-
-        // Left Boundary Wall
-        const leftWallGeo = new THREE.BoxGeometry(1, 6, this.roomDepth);
-        const leftWallMat = new THREE.MeshStandardMaterial({ color: 0x181e2e, roughness: 0.8 });
-        const leftWall = new THREE.Mesh(leftWallGeo, leftWallMat);
-        leftWall.position.set(-this.roomWidth / 2 - 0.5, 3, 0);
-        this.mapGroup.add(leftWall);
-
-        // Right Boundary Wall / Exit Doorway
-        const rightWallGeo = new THREE.BoxGeometry(1, 6, this.roomDepth);
-        const rightWallMat = new THREE.MeshStandardMaterial({ color: 0x181e2e, roughness: 0.8 });
-        const rightWall = new THREE.Mesh(rightWallGeo, rightWallMat);
-        rightWall.position.set(this.roomWidth / 2 + 0.5, 3, 0);
-        this.mapGroup.add(rightWall);
-
-        // Decorative Pillars along back wall
+        // Decorative Pillars with Glowing Rune Crystals
         for (let x = -this.roomWidth / 2 + 4; x <= this.roomWidth / 2 - 4; x += 8) {
             this.createWallPillar(x, -this.roomDepth / 2 + 0.8);
         }
 
-        // Spawn Chests in room
-        if (Math.random() < 0.7) {
+        // Side Boundaries
+        const leftWallGeo = new THREE.BoxGeometry(1, 6, this.roomDepth);
+        const leftWallMat = new THREE.MeshStandardMaterial({ color: 0x151b2c, roughness: 0.8 });
+        const leftWall = new THREE.Mesh(leftWallGeo, leftWallMat);
+        leftWall.position.set(-this.roomWidth / 2 - 0.5, 3, 0);
+        this.mapGroup.add(leftWall);
+
+        const rightWallGeo = new THREE.BoxGeometry(1, 6, this.roomDepth);
+        const rightWallMat = new THREE.MeshStandardMaterial({ color: 0x151b2c, roughness: 0.8 });
+        const rightWall = new THREE.Mesh(rightWallGeo, rightWallMat);
+        rightWall.position.set(this.roomWidth / 2 + 0.5, 3, 0);
+        this.mapGroup.add(rightWall);
+
+        // Ornate Golden Treasure Chests
+        if (Math.random() < 0.75) {
             this.createChest(-this.roomWidth / 3, -this.roomDepth / 3);
         }
 
-        // Add Boundary Obstacles into physics check
         this.obstacles.push({ type: 'wall_top', z: -this.roomDepth / 2 + 0.5 });
         this.obstacles.push({ type: 'wall_bottom', z: this.roomDepth / 2 - 0.5 });
         this.obstacles.push({ type: 'wall_left', x: -this.roomWidth / 2 + 0.8 });
         this.obstacles.push({ type: 'wall_right', x: this.roomWidth / 2 - 0.8 });
 
-        // Atmospheric Dust Particles
         this.createAmbientDust();
     }
 
     createWallPillar(x, z) {
-        const pillarGeo = new THREE.BoxGeometry(1.2, 7, 1.2);
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x2d3752, roughness: 0.5 });
+        const pillarGeo = new THREE.BoxGeometry(1.3, 7.5, 1.3);
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x2b3859, roughness: 0.4, metalness: 0.2 });
         const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-        pillar.position.set(x, 3.5, z);
+        pillar.position.set(x, 3.75, z);
         pillar.castShadow = true;
         this.mapGroup.add(pillar);
 
-        // Torch light atop pillar
-        const torchLight = new THREE.PointLight(0xffaa00, 1.2, 10);
-        torchLight.position.set(x, 4.5, z + 0.8);
+        // Torch Light
+        const torchLight = new THREE.PointLight(0xffaa00, 1.4, 12);
+        torchLight.position.set(x, 4.8, z + 0.85);
         this.mapGroup.add(torchLight);
 
-        // Torch flame particle
-        const flameGeo = new THREE.SphereGeometry(0.2, 8, 8);
+        // Flame Mesh
+        const flameGeo = new THREE.OctahedronGeometry(0.25);
         const flameMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
         const flame = new THREE.Mesh(flameGeo, flameMat);
-        flame.position.set(x, 4.5, z + 0.8);
+        flame.position.set(x, 4.8, z + 0.85);
         this.mapGroup.add(flame);
     }
 
     createChest(x, z) {
         const chestGroup = new THREE.Group();
-        const baseGeo = new THREE.BoxGeometry(1.4, 0.9, 1.0);
-        const baseMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.4 });
+        const baseGeo = new THREE.BoxGeometry(1.5, 0.95, 1.1);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.3 });
         const base = new THREE.Mesh(baseGeo, baseMat);
-        base.position.y = 0.45;
+        base.position.y = 0.48;
         base.castShadow = true;
         chestGroup.add(base);
 
-        const trimGeo = new THREE.BoxGeometry(1.45, 0.25, 1.05);
-        const trimMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9 });
+        const trimGeo = new THREE.BoxGeometry(1.55, 0.28, 1.15);
+        const trimMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.95, roughness: 0.1 });
         const trim = new THREE.Mesh(trimGeo, trimMat);
-        trim.position.y = 0.7;
+        trim.position.y = 0.75;
         chestGroup.add(trim);
 
         chestGroup.position.set(x, 0, z);
@@ -152,19 +140,17 @@ class DungeonMap {
 
         const doorGroup = new THREE.Group();
 
-        // Glowing "GO ➡️" Right Doorway Frame
-        const doorGeo = new THREE.RingGeometry(1.8, 2.4, 16);
+        const doorGeo = new THREE.RingGeometry(2.0, 2.6, 20);
         const doorMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide });
         const door = new THREE.Mesh(doorGeo, doorMat);
-        door.position.set(this.roomWidth / 2 - 1.5, 2.2, 0);
+        door.position.set(this.roomWidth / 2 - 1.5, 2.5, 0);
         door.rotation.y = Math.PI / 2;
         doorGroup.add(door);
 
-        // Inner glowing vortex
-        const vortexGeo = new THREE.CircleGeometry(1.7, 16);
-        const vortexMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+        const vortexGeo = new THREE.CircleGeometry(1.9, 20);
+        const vortexMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
         const vortex = new THREE.Mesh(vortexGeo, vortexMat);
-        vortex.position.set(this.roomWidth / 2 - 1.4, 2.2, 0);
+        vortex.position.set(this.roomWidth / 2 - 1.4, 2.5, 0);
         vortex.rotation.y = Math.PI / 2;
         doorGroup.add(vortex);
 
@@ -184,7 +170,7 @@ class DungeonMap {
     }
 
     createAmbientDust() {
-        const particleCount = 100;
+        const particleCount = 120;
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
 
@@ -196,13 +182,19 @@ class DungeonMap {
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         const material = new THREE.PointsMaterial({
-            color: 0x88ccff,
-            size: 0.12,
+            color: 0x00f0ff,
+            size: 0.14,
             transparent: true,
-            opacity: 0.5
+            opacity: 0.55
         });
 
         const dust = new THREE.Points(geometry, material);
         this.mapGroup.add(dust);
+    }
+
+    destroy() {
+        if (this.mapGroup && this.scene) {
+            this.scene.remove(this.mapGroup);
+        }
     }
 }

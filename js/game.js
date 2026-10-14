@@ -142,6 +142,7 @@ const Game = (() => {
                         // Advance to Next Room
                         currentRoom++;
                         player.setPosition(-14, 0, 0);
+                        if (dungeonMap) dungeonMap.destroy();
                         dungeonMap = new DungeonMap(Engine.scene, stage, currentRoom, maxRooms);
                         waveManager = new WaveManager(Engine.scene, stage, currentRoom, maxRooms);
                         UI.hideRoomClearBanner();
@@ -328,6 +329,7 @@ const Game = (() => {
         UI.hideRoomClearBanner();
 
         player.setPosition(-14, 0, 0);
+        if (dungeonMap) dungeonMap.destroy();
         dungeonMap = new DungeonMap(Engine.scene, stage, currentRoom, maxRooms);
         waveManager = new WaveManager(Engine.scene, stage, currentRoom, maxRooms);
 
