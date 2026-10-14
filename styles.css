@@ -1,0 +1,508 @@
+/* DNF Masterpiece Dark Fantasy Aesthetic UI */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #03050a;
+    font-family: 'Cinzel', 'Segoe UI', Tahoma, Geneva, sans-serif;
+    color: #ffffff;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    overflow: hidden;
+}
+
+#game-container canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* HUD Overlay Layer */
+.hud-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hud-layer * {
+    pointer-events: auto;
+}
+
+/* Top Bar Styling */
+.top-bar {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(16, 22, 38, 0.95), rgba(8, 11, 20, 0.95));
+    border: 2px solid #8b0000;
+    box-shadow: 0 0 15px rgba(139, 0, 0, 0.6), inset 0 0 10px rgba(0, 0, 0, 0.8);
+    border-radius: 12px;
+    padding: 10px 16px;
+}
+
+.avatar-box {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    background: radial-gradient(circle, #3d141e, #120508);
+    border: 2px solid #ffd700;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 14px;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+}
+
+.avatar-icon {
+    font-size: 28px;
+}
+
+.level-badge {
+    position: absolute;
+    bottom: -6px;
+    background: linear-gradient(135deg, #ffd700, #b8860b);
+    color: #000;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+}
+
+.bars-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 170px;
+}
+
+.bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.bar-label {
+    font-size: 11px;
+    font-weight: 900;
+    width: 28px;
+    color: #cbd5e0;
+}
+
+.bar-outer {
+    position: relative;
+    flex: 1;
+    height: 13px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #4a5568;
+    border-radius: 7px;
+    overflow: hidden;
+    box-shadow: inset 0 0 5px #000;
+}
+
+.bar-inner {
+    height: 100%;
+    transition: width 0.18s ease-out;
+}
+
+.hp-wrapper .bar-inner { background: linear-gradient(90deg, #cc0000, #ff3300); }
+.mp-wrapper .bar-inner { background: linear-gradient(90deg, #0055ff, #00d8ff); }
+.exp-wrapper .bar-inner { background: linear-gradient(90deg, #00cc44, #33ff66); }
+
+.bar-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 9px;
+    font-weight: 900;
+    text-shadow: 1px 1px 3px #000;
+}
+
+/* Stage Info Banner */
+.stage-info {
+    background: linear-gradient(135deg, rgba(20, 10, 15, 0.95), rgba(10, 5, 8, 0.95));
+    border: 2px solid #cc0000;
+    padding: 10px 28px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+}
+
+.stage-title {
+    font-size: 17px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+.wave-count {
+    font-size: 12px;
+    color: #a0aec0;
+}
+
+/* Currency & Score Box */
+.stats-box {
+    display: flex;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(16, 22, 38, 0.95), rgba(8, 11, 20, 0.95));
+    border: 2px solid #8b0000;
+    border-radius: 10px;
+    padding: 10px 16px;
+    box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 900;
+    font-size: 15px;
+}
+
+/* Boss Multi-HP Bar */
+.boss-hp-wrapper {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 62%;
+    max-width: 680px;
+    background: rgba(12, 0, 4, 0.92);
+    border: 2px solid #ff0033;
+    border-radius: 10px;
+    padding: 10px 18px;
+    box-shadow: 0 0 25px rgba(255, 0, 51, 0.7);
+}
+
+.boss-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.boss-name {
+    color: #ff3300;
+    font-weight: 900;
+    font-size: 16px;
+    text-shadow: 0 0 8px #ff0000;
+}
+
+.boss-hp-layer-badge {
+    color: #ffd700;
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.boss-bar-outer {
+    position: relative;
+    height: 18px;
+    background: #2a0000;
+    border-radius: 9px;
+    overflow: hidden;
+    border: 1px solid #ff6666;
+}
+
+.boss-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000, #ff6600, #ffff00);
+    transition: width 0.15s ease;
+}
+
+/* Combo Overlay */
+.combo-overlay {
+    position: absolute;
+    top: 135px;
+    right: 45px;
+    text-align: right;
+    animation: comboPulse 0.15s ease-out;
+}
+
+@keyframes comboPulse {
+    0% { transform: scale(1.4); }
+    100% { transform: scale(1.0); }
+}
+
+.combo-number {
+    font-size: 52px;
+    font-weight: 900;
+    color: #ff3300;
+    text-shadow: 0 0 15px #ff0000, 2px 2px 0 #000;
+    font-style: italic;
+}
+
+.combo-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #ffd700;
+    letter-spacing: 2px;
+}
+
+.combo-rank {
+    font-size: 15px;
+    color: #00f0ff;
+    font-weight: 900;
+}
+
+/* CLEAR Banner */
+.clear-banner {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.banner-title {
+    font-size: 72px;
+    font-weight: 900;
+    color: #00f0ff;
+    text-shadow: 0 0 30px #00f0ff, 4px 4px 0 #000;
+    animation: bannerGlow 1s infinite alternate;
+}
+
+.banner-prompt {
+    font-size: 26px;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 12px #ffd700;
+    margin-top: 12px;
+}
+
+@keyframes bannerGlow {
+    from { transform: scale(1.0); filter: drop-shadow(0 0 12px #00f0ff); }
+    to { transform: scale(1.08); filter: drop-shadow(0 0 30px #00ffff); }
+}
+
+/* Virtual Joystick */
+#joystick-zone {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    width: 135px;
+    height: 135px;
+    touch-action: none;
+}
+
+#joystick-base {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(0,240,255,0.2) 0%, rgba(8,11,20,0.85) 70%);
+    border: 2px solid rgba(0,240,255,0.5);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 15px rgba(0,240,255,0.3);
+}
+
+#joystick-stick {
+    width: 52px;
+    height: 52px;
+    background: radial-gradient(circle, #00f0ff 0%, #0066cc 100%);
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.9);
+    transition: transform 0.05s ease-out;
+}
+
+/* Skill Hotbar */
+.skill-bar {
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(16, 22, 38, 0.95), rgba(8, 11, 20, 0.95));
+    border: 2px solid #8b0000;
+    border-radius: 14px;
+    padding: 10px 16px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.9), 0 0 15px rgba(139, 0, 0, 0.4);
+}
+
+.skill-slot {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid #4a5568;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    overflow: hidden;
+}
+
+.skill-slot:hover {
+    border-color: #00f0ff;
+    transform: translateY(-3px);
+    box-shadow: 0 0 12px #00f0ff;
+}
+
+.skill-icon {
+    font-size: 24px;
+}
+
+.key-bind {
+    font-size: 9px;
+    font-weight: 900;
+    color: #ffd700;
+}
+
+.skill-name {
+    font-size: 8px;
+    color: #cbd5e0;
+}
+
+.cooldown-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: rgba(0, 0, 0, 0.75);
+    transition: height 0.1s linear;
+}
+
+/* Floating Damage Numbers */
+.floating-text {
+    position: absolute;
+    font-weight: 900;
+    font-size: 26px;
+    text-shadow: 2px 2px 0 #000, 0 0 8px rgba(255,255,255,0.6);
+    pointer-events: none;
+    animation: floatUp 0.75s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(0.6); }
+    50% { opacity: 1; transform: translateY(-32px) scale(1.35); }
+    100% { opacity: 0; transform: translateY(-55px) scale(1.0); }
+}
+
+/* Overlay Modals */
+.overlay-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(3, 5, 10, 0.90);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-card.dnf-theme {
+    background: linear-gradient(135deg, #141b2d 0%, #080c16 100%);
+    border: 2px solid #cc0000;
+    border-radius: 18px;
+    padding: 35px 45px;
+    max-width: 600px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 35px rgba(204, 0, 0, 0.6);
+}
+
+.game-title {
+    font-size: 36px;
+    color: #ff3300;
+    text-shadow: 0 0 20px #ff0000;
+}
+
+.instructions-panel {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #3d4f7c;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 18px 0;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.instructions-panel ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.highlight {
+    color: #ffd700;
+    font-weight: 900;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #cc0000, #880000);
+    color: #fff;
+    border: none;
+    padding: 14px 35px;
+    font-size: 17px;
+    font-weight: 900;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(255, 0, 0, 0.5);
+}
+
+.primary-btn.glow-red {
+    animation: glowBtn 1.5s infinite alternate;
+}
+
+@keyframes glowBtn {
+    from { box-shadow: 0 0 12px #ff0000; }
+    to { box-shadow: 0 0 30px #ff3300; }
+}
+
+.secondary-btn {
+    background: #2d3748;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
